@@ -41,14 +41,14 @@ src/models/prabayar.py
 src/models/pascabayar.py
     |
     v
-Preprocessing
-src/core/data_cleaner.py
-src/core/feature_engineer.py
-src/core/encoder.py
+Train-test split
+raw dataframe split
     |
     v
-Train-test split
-src/core/splitter.py
+Fit preprocessing on train only
+Transform train and test
+src/core/preprocessor.py
+src/core/feature_engineer.py
     |
     v
 Random Forest Regression
@@ -74,10 +74,11 @@ results/evaluation_*.json
 | Training entrypoint | `src/train.py` | Menjalankan pipeline training berdasarkan argumen dataset. |
 | Model pipeline prabayar | `src/models/prabayar.py` | Menjalankan preprocessing untuk dataset prabayar. |
 | Model pipeline pascabayar | `src/models/pascabayar.py` | Menjalankan preprocessing untuk dataset pascabayar. |
-| Data cleaner | `src/core/data_cleaner.py` | Missing value handling, konversi tipe data, drop kolom tidak dipakai, dan clipping outlier. |
+| Preprocessor | `src/core/preprocessor.py` | Fit median/mode/IQR/one-hot columns dari train, lalu transform train dan test dengan parameter yang sama. |
+| Data cleaner | `src/core/data_cleaner.py` | Modul cleaning lama untuk missing value, konversi tipe data, drop kolom, dan clipping outlier. |
 | Feature engineering | `src/core/feature_engineer.py` | Membuat fitur energi harian, total energi, dan fitur turunan pembayaran. |
 | Encoder | `src/core/encoder.py` | Mengubah fitur kategorikal menjadi angka. |
-| Splitter | `src/core/splitter.py` | Memisahkan fitur `X` dan target `y`, lalu membagi train-test. |
+| Splitter | `src/core/splitter.py` | Modul split lama untuk memisahkan fitur `X` dan target `y`. Training utama sekarang split raw dataframe di `src/train.py`. |
 | Random forest | `src/forest/random_forest_regressor.py` | Mengelola training banyak decision tree dan agregasi prediksi. |
 | Bootstrap | `src/forest/bootstrap.py` | Membuat bootstrap sample dengan replacement untuk setiap tree. |
 | Decision tree | `src/tree/decision_tree_regressor.py` | Membangun tree regression berdasarkan split yang meminimalkan MSE. |
@@ -199,8 +200,8 @@ Contoh hasil evaluasi:
 ```json
 {
     "dataset": "prabayar",
-    "mse": 26.777185549574543,
-    "timestamp": "20260503_125902"
+    "mse": 51.74856083061192,
+    "timestamp": "20260503_144030"
 }
 ```
 
@@ -243,17 +244,34 @@ Parameter preprocessing:
 
 Path ditentukan melalui `config["paths"]["raw_data"]`.
 
-### 2. Data Cleaning
+### 2. Split Raw Dataset
 
-`DataCleaner` melakukan:
+Data mentah dibagi menjadi train dan test sebelum preprocessing berat. Ini mencegah data test ikut memengaruhi nilai median, mode, batas IQR, dan daftar kolom one-hot.
+
+### 3. Fit Preprocessing pada Train
+
+`Preprocessor.fit()` menghitung parameter hanya dari train:
+
+- Median atau mean untuk imputasi numerik.
+- Modus untuk imputasi kategorikal.
+- Batas outlier IQR.
+- Daftar kolom hasil one-hot encoding.
+
+### 4. Transform Train dan Test
+
+`Preprocessor.transform()` menerapkan parameter hasil fit ke train dan test. Test tidak menghitung ulang median, mode, IQR, atau daftar dummy columns.
+
+### 5. Data Cleaning
+
+Tahap cleaning di dalam `Preprocessor` melakukan:
 
 - Mengisi missing value numerik dengan median atau mean.
 - Mengisi missing value kategorikal dengan modus.
 - Mengubah fitur numerik yang terbaca sebagai string menjadi angka.
 - Menghapus kolom yang tidak digunakan.
-- Melakukan clipping outlier dengan metode IQR.
+- Melakukan clipping outlier dengan metode IQR berdasarkan batas dari train.
 
-### 3. Feature Engineering
+### 6. Feature Engineering
 
 `FeatureEngineer` berisi fungsi untuk:
 
@@ -264,20 +282,20 @@ Path ditentukan melalui `config["paths"]["raw_data"]`.
 
 Catatan: pada pipeline saat ini, model memanggil sebagian fungsi feature engineering secara eksplisit. Jika ingin memakai seluruh pipeline fitur turunan, gunakan `engineer_features()`.
 
-### 4. Encoding
+### 7. Encoding
 
-`Encoder` mengubah fitur kategorikal menjadi kode numerik. Ini diperlukan karena decision tree dari scratch saat ini hanya menerima nilai numerik untuk membentuk threshold split.
+Preprocessor menggunakan one-hot encoding untuk fitur kategorikal yang masih bertipe string. Kolom test di-reindex agar sama dengan kolom train.
 
-### 5. Split Dataset
+### 8. Split X dan y
 
-`Splitter` memisahkan:
+Setelah preprocessing selesai, `train.py` memisahkan:
 
 - `X`: semua fitur selain target.
 - `y`: target prediksi.
 
 Target tidak ikut masuk ke fitur model. Hal ini penting untuk mencegah data leakage.
 
-### 6. Training Random Forest
+### 9. Training Random Forest
 
 Untuk setiap estimator:
 
@@ -286,16 +304,18 @@ Untuk setiap estimator:
 - Train decision tree.
 - Simpan tree ke dalam list forest.
 
-### 7. Prediction dan Evaluation
+### 10. Prediction dan Evaluation
 
 Prediksi dibuat dengan merata-ratakan output semua tree. Evaluasi utama yang saat ini dicetak oleh `train.py` adalah MSE.
 
 ## Best Practice yang Dipakai
 
 - Target dipisahkan dari fitur sebelum training.
+- Raw data dibagi menjadi train-test sebelum preprocessing yang menghitung statistik.
+- Median, mode, batas IQR, dan daftar one-hot columns di-fit dari train saja.
+- Test ditransform memakai parameter preprocessing dari train.
 - Bootstrap sampling menjaga sinkronisasi antara `X` dan `y`.
 - Random feature selection digunakan untuk membangun diversity antar tree.
-- Split train-test dilakukan setelah target dipisahkan.
 - Model tidak menggunakan library machine learning siap pakai.
 - Konfigurasi target, fitur, path, dan parameter model dipusatkan di `config.py`.
 
@@ -303,33 +323,27 @@ Prediksi dibuat dengan merata-ratakan output semua tree. Evaluasi utama yang saa
 
 Beberapa hal masih perlu diperhatikan jika project ini digunakan untuk eksperimen akademik atau produksi:
 
-- Preprocessing masih dilakukan sebelum train-test split, sehingga ada potensi data leakage pada imputasi, clipping outlier, dan encoding.
-- Label encoding pada fitur nominal dapat memberi urutan palsu, misalnya kota A dianggap lebih kecil dari kota B. One-hot encoding lebih aman untuk fitur nominal.
-- Outlier clipping saat ini juga dapat memengaruhi target. Untuk evaluasi yang objektif, target sebaiknya tidak diubah sembarangan.
-- `FeatureEngineer.engineer_features()` belum sepenuhnya dipakai oleh pipeline model.
+- `src/models/prabayar.py` dan `src/models/pascabayar.py` masih menyimpan pipeline preprocessing lama. Entrypoint training utama sudah memakai `src/core/preprocessor.py`.
+- `Bulan_Tagihan` pada pascabayar masih dipetakan menjadi angka di feature engineering untuk kebutuhan fitur rasio. Jika diperlakukan sebagai nominal murni, pertimbangkan kolom turunan terpisah.
 - Metrik yang disimpan saat ini hanya MSE, walaupun fungsi MAE, RMSE, R2, dan MAPE sudah tersedia.
 - Belum ada unit test untuk bootstrap, splitter, preprocessing, dan tree.
 - Belum ada OOB score, padahal bootstrap sudah menyediakan dasar untuk menghitung out-of-bag evaluation.
 
 ## Rekomendasi Pengembangan Lanjutan
 
-1. Buat preprocessing berbasis `fit` dan `transform`.
-
-Preprocessing harus fit di data train saja, lalu transform ke data test. Ini mengurangi risiko leakage.
-
-2. Gunakan one-hot encoding untuk fitur nominal.
+1. Gunakan one-hot encoding konsisten untuk semua fitur nominal.
 
 Fitur seperti `Kota/Kabupaten`, kategori alat, dan jenis alat lebih cocok one-hot daripada label encoding.
 
-3. Aktifkan evaluasi lengkap.
+2. Aktifkan evaluasi lengkap.
 
 Simpan `MAE`, `MSE`, `RMSE`, dan `R2` agar interpretasi performa lebih jelas.
 
-4. Tambahkan OOB evaluation.
+3. Tambahkan OOB evaluation.
 
 Out-of-bag score dapat menjadi validasi internal random forest tanpa validasi tambahan.
 
-5. Tambahkan unit test.
+4. Tambahkan unit test.
 
 Minimal test:
 
@@ -339,7 +353,7 @@ Minimal test:
 - `X_sample` dan `y_sample` selalu sinkron.
 - Prediksi memiliki jumlah baris sama dengan `X_test`.
 
-6. Rapikan output directory.
+5. Rapikan output directory.
 
 Saat ini config mendefinisikan path di `outputs/`, tetapi `FileWriter` menyimpan ke `results/`. Pilih satu standar agar struktur project konsisten.
 
@@ -393,8 +407,8 @@ Hasil terakhir:
 
 | Dataset | Status | MSE |
 | --- | --- | --- |
-| Prabayar | Berhasil | `26.777185549574543` |
-| Pascabayar | Berhasil | `14421218286.188038` |
+| Prabayar | Berhasil | `51.74856083061192` |
+| Pascabayar | Berhasil | `70856059158.77475` |
 
 ## Lisensi
 

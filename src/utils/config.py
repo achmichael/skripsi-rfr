@@ -235,19 +235,19 @@ config = {
 
     "one_hot_columns": [
         "Kota/Kabupaten",
-        "Jenis_Listrik",
         "Kulkas_Kategori",
         "TV_Kategori",
         "AC_Kategori",
         "Kipas_Kategori",
         "RiceCooker_Kategori",
         "MesinCuci_Kategori",
+        "Alat_Lain_Ada",
         "Alat_Lain_1_Jenis",
-        "Alat_Lain_2_Jenis",
-        "Alat_Lain_3_Jenis",
         "Alat_Lain_1_Kategori",
+        "Alat_Lain_2_Jenis",
         "Alat_Lain_2_Kategori",
-        "Alat_Lain_3_Kategori",
+        "Alat_Lain_3_Jenis",
+        "Alat_Lain_3_Kategori"
     ],
 
     "unused_features": {

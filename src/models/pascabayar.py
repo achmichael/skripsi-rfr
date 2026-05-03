@@ -21,9 +21,10 @@ class PascabayarModel:
         engineer.engineer_features()
         self.df = engineer.df
         # Step 3: Encoding categorical features
-        encoder = Encoder(self.df)
+        encoder = Encoder(self.df, dataset_type=self.dataset_type)
         encoder.encode_features()
         self.df = encoder.df
+        
         return self.df
     
     
