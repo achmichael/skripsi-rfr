@@ -1,0 +1,7 @@
+venv/
+data/
+docs/
+outputs/
+results/
+/*.log
+/*__pycache__/

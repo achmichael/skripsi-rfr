@@ -1,0 +1,30 @@
+from utils.config import config
+from core.data_cleaner import DataCleaner
+from core.feature_engineer import FeatureEngineer
+from core.encoder import Encoder
+
+class PascabayarModel:
+    def __init__(self, df):
+        self.df = df.copy()
+        self.dataset_type = "pascabayar"
+    
+    def preprocess_data(self):
+        # Step 1: Data cleaning
+        cleaner = DataCleaner(self.df, dataset_type=self.dataset_type)
+        cleaner.handle_missing_values()
+        cleaner.convert_data_types()
+        cleaner.drop_unused_columns(config['unused_features']['pascabayar'])
+        cleaner.handle_outliers()
+        self.df = cleaner.df
+        # Step 2: Feature engineering
+        engineer = FeatureEngineer(self.df, dataset_type=self.dataset_type)
+        engineer.calculate_daily_energy()
+        engineer.calculate_washing_machine_energy()
+        self.df = engineer.df
+        # Step 3: Encoding categorical features
+        encoder = Encoder(self.df)
+        encoder.encode_features()
+        self.df = encoder.df
+        return self.df
+    
+    
