@@ -18,8 +18,7 @@ class PascabayarModel:
         self.df = cleaner.df
         # Step 2: Feature engineering
         engineer = FeatureEngineer(self.df, dataset_type=self.dataset_type)
-        engineer.calculate_daily_energy()
-        engineer.calculate_washing_machine_energy()
+        engineer.engineer_features()
         self.df = engineer.df
         # Step 3: Encoding categorical features
         encoder = Encoder(self.df)

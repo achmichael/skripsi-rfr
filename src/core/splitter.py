@@ -1,5 +1,4 @@
 import pandas as pd
-from utils.config import config
 import numpy as np
 
 class Splitter:
@@ -69,6 +68,6 @@ class Splitter:
         print("Jumlah total data :", n)
         print("Jumlah data train:", len(X_train))
         print("Jumlah data test :", len(X_test))
-
+        
         return X_train, X_test, y_train, y_test       
     

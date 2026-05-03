@@ -8,6 +8,7 @@ class Bootstrap:
 
     def create_bootstrap_sample(self):
         positions = self.rng.choice(len(self.df), len(self.df), replace=True)
+        # return 2 objects: bootstrap sample and the positions of the bootstrap sample in the original dataset
         return self.df.iloc[positions], positions
     
     def create_oob_sample(self, bootstrap_positions):

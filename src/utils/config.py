@@ -45,7 +45,8 @@ config = {
         # Scaling is optional for Random Forest
         # Random Forest does not require scaling, so False is preferred
         "scaling": False,
-
+        "clip_target": False,
+        
         # Encoding configuration
         "encoding": {
             "nominal": "one_hot",
@@ -86,7 +87,7 @@ config = {
             "pascabayar": "outputs/reports/evaluation_pascabayar.txt"
         }
     },
-
+    
     "target": {
         "prabayar": "Token_Habis_Dalam_Hari",
         "pascabayar": "Rata_Rata_Tagihan_Per_Bulan_Rp"

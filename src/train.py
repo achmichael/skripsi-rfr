@@ -26,7 +26,7 @@ def main(dataset_type):
         target_column = config['target']['pascabayar']
 
     # Step 3: Split data
-    
+
     splitter = Splitter(df_preprocessed, target_column=target_column)
 
     if dataset_type == "prabayar":
@@ -35,7 +35,7 @@ def main(dataset_type):
         splitter.postpaid_split()
     
     X_train, X_test, y_train, y_test = splitter.split_dataset()
-
+    
     # Step 4: Train model
     rf = RandomForestRegressor(n_estimators=100, max_depth=10)
     rf.fit(X_train, y_train)

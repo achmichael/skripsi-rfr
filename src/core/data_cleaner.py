@@ -7,10 +7,7 @@ class DataCleaner:
         self.df = df
         self.dataset_type = dataset_type
 
-    def handle_missing_values(self):
-        print("\nHandling missing values...")
-        print(self.df.isnull().sum())
-        
+    def handle_missing_values(self):        
         for col in self.df.columns:
             if self.df[col].dtype in ['float64', 'int64']:
                 if config['data_preprocessing']['numeric_missing_strategy'] == 'median':
@@ -61,7 +58,10 @@ class DataCleaner:
 
     def handle_outliers(self):
         if config['data_preprocessing']['handle_outliers'] and config['data_preprocessing']['outlier_method'] == 'iqr':
+            target_col = config['target'][self.dataset_type]
             for col in self.df.select_dtypes(include=['float64', 'int64']).columns:
+                if col == target_col and not config['data_preprocessing']['clip_target']:
+                    continue  # skip outlier handling for target col, because it may contain extreme values that are valid for the target variable
                 Q1 = self.df[col].quantile(0.25)
                 Q3 = self.df[col].quantile(0.75)
                 IQR = Q3 - Q1
@@ -69,6 +69,7 @@ class DataCleaner:
                 upper_bound = Q3 + 1.5 * IQR
                 outliers = self.df[(self.df[col] < lower_bound) | (self.df[col] > upper_bound)]
                 print(f"Column '{col}' has {len(outliers)} outliers.")
+                # clip the outliers to the bounds
                 self.df[col] = self.df[col].clip(lower_bound, upper_bound)
                 print(f"Clipped column '{col}' to bounds: {lower_bound}, {upper_bound}")
         else:
