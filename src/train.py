@@ -3,9 +3,27 @@ import argparse
 import pandas as pd
 import numpy as np
 from core.preprocessor import Preprocessor
+from core.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+    root_mean_squared_error,
+    mean_absolute_percentage_error,
+)
 from forest.random_forest_regressor import RandomForestRegressor
 from utils.config import config
 from utils.file_writer import FileWriter
+
+def calculate_metrics(y_true, y_pred):
+    metrics = {
+        "MAE": mean_absolute_error(y_true, y_pred),
+        "MSE": mean_squared_error(y_true, y_pred),
+        "RMSE": root_mean_squared_error(y_true, y_pred),
+        "R2": r2_score(y_true, y_pred),
+        "MAPE": mean_absolute_percentage_error(y_true, y_pred),
+    }
+
+    return {name: float(value) for name, value in metrics.items()}
 
 def split_raw_dataset(df, train_ratio=0.8, random_state=42, shuffle=True):
     indices = np.arange(len(df))
@@ -67,12 +85,16 @@ def main(dataset_type):
     rf.fit(X_train, y_train)
 
     y_pred = rf.predict(X_test)
-    mse = ((y_test - y_pred) ** 2).mean()
-    print(f"Mean Squared Error: {mse}")
+    evaluation_metrics = calculate_metrics(y_test, y_pred)
+
+    print("Evaluation Metrics:")
+    for metric_name, metric_value in evaluation_metrics.items():
+        print(f"{metric_name}: {metric_value}")
 
     file_writer = FileWriter()
     file_writer.save_model(rf, dataset_type)
-    file_writer.save_evaluation_results(mse, dataset_type)
+    file_writer.save_evaluation_results(evaluation_metrics, dataset_type)
+    file_writer.save_metric_bar(evaluation_metrics, dataset_type)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train model for prabayar or pascabayar dataset")
