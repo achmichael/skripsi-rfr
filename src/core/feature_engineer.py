@@ -88,7 +88,6 @@ class FeatureEngineer:
             "TV_Energi_kWhPerHari",
             "AC_Energi_kWhPerHari",
             "Kulkas_Energi_kWhPerHari",
-            "MesinCuci_Energi_kwhPerHari",
             "RiceCooker_Energi_kWhPerHari",
         ]
 
@@ -101,11 +100,13 @@ class FeatureEngineer:
         ]
 
         if len(other_cols) > 0:
-            self.df["Total_Energi_Alat_Lain_kWhPerHari"] = self.df[main_exists + other_cols].sum(axis=1)
+            self.df["Total_Energi_Alat_Lain_kWhPerHari"] = self.df[other_cols].sum(axis=1)
         else:
             self.df["Total_Energi_Alat_Lain_kWhPerHari"] = 0
             print("No 'Alat Lain' energy columns found. Total_Energi_Alat_Lain_kWhPerHari set to 0.")
         
+        self.df["Total_Energi_Utama_kWhPerHari"] = self.df[main_exists].sum(axis=1) if len(main_exists) > 0 else 0
+
         self.df["Total_Energi_Semua_kWhPerHari"] = (
             self.df["Total_Energi_Utama_kWhPerHari"] +
             self.df["Total_Energi_Alat_Lain_kWhPerHari"]
@@ -130,12 +131,6 @@ class FeatureEngineer:
                     self.df["Nominal_Token_Terakhir_Rp"] *
                     self.df["Frekuensi_Isi_Token_Per_Bulan"]
                 )
-
-        # additional features to capture interaction between energy consumption and token usage
-            self.df["Rasio_Frekuensi_Token_Energi"] = (
-                self.df["Nominal_Token_Terakhir_Rp"] /
-                (self.df["Total_Energi_Semua_kWhPerHari"] + 1e-6)
-            )
         
         return self
     

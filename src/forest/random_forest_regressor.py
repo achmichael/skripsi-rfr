@@ -27,10 +27,11 @@ class RandomForestRegressor:
             tree = DecisionTreeRegressor(max_depth=self.max_depth, min_samples_split=self.min_samples_split, min_samples_leaf=self.min_samples_leaf, max_features=self.max_features, random_state=self.random_state + i)
             tree.fit(X_sample, y_sample)
             self.trees.append(tree)
-            
+
     
     def predict(self, X):
         tree_predictions = np.array([tree.predict(X) for tree in self.trees])
+        print(f"Predictions shape from all trees: {tree_predictions.shape}")
         return np.mean(tree_predictions, axis=0)
     
     def score(self, X, y):

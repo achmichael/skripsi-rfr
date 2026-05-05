@@ -5,17 +5,17 @@
 config = {
     "random_forest": {
         # Number of trees in the forest
-        "n_estimators": 100,
+        "n_estimators": 300,
 
         # Maximum depth of each decision tree
         # None means the tree grows until stopping criteria are met
-        "max_depth": None,
+        "max_depth": 12,
 
         # Minimum number of samples required to split an internal node
-        "min_samples_split": 2,
+        "min_samples_split": 5,
 
         # Minimum number of samples required to be in a leaf node
-        "min_samples_leaf": 1,
+        "min_samples_leaf": 3,
 
         # Number of random features considered at each split
         # Options: "sqrt", "third", "all", or integer value

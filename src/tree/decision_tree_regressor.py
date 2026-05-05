@@ -85,8 +85,8 @@ class DecisionTreeRegressor:
         else:
             raise ValueError("max_features must be 'sqrt', 'third', 'all', None, or an integer")
 
-        rng = np.random.default_rng(self.random_state)
-        return rng.choice(self.n_features_, size=n_selected, replace=False)
+        self.rng = np.random.default_rng(self.random_state)
+        return self.rng.choice(self.n_features_, size=n_selected, replace=False)
 
     def _best_split(self, X, y, feature_indices):
         best_mse = float("inf")
