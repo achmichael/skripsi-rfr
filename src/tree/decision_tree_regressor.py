@@ -33,6 +33,9 @@ class DecisionTreeRegressor:
             self.feature_importances_ /= total
 
     def _build_tree(self, X, y, depth):
+        if (self.max_depth is not None and depth >= self.max_depth or len(y) < self.min_samples_split) or len(y) < self.min_samples_leaf:
+            return TreeNode(value=np.mean(y), is_leaf=True)
+        
         value = np.mean(y)
         if self._should_stop(y, depth):
             return TreeNode(value=value, is_leaf=True)
@@ -45,6 +48,9 @@ class DecisionTreeRegressor:
 
         left_mask = X[:, best_feature] <= best_threshold
         right_mask = ~left_mask
+
+        if len(y[left_mask]) < self.min_samples_leaf or len(y[right_mask]) < self.min_samples_leaf:
+            return TreeNode(value=value, is_leaf=True)
 
         left = self._build_tree(X[left_mask], y[left_mask], depth + 1)
         right = self._build_tree(X[right_mask], y[right_mask], depth + 1)

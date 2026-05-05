@@ -9,7 +9,7 @@ config = {
 
         # Maximum depth of each decision tree
         # None means the tree grows until stopping criteria are met
-        "max_depth": 10,
+        "max_depth": None,
 
         # Minimum number of samples required to split an internal node
         "min_samples_split": 2,
