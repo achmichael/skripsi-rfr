@@ -2,6 +2,8 @@
 from utils.config import config
 
 class FeatureEngineer:
+    DAYS_PER_MONTH = 30
+
     def __init__(self, df, dataset_type="prabayar"):
         self.df = df.copy()
         self.dataset_type = dataset_type.lower()
@@ -54,7 +56,7 @@ class FeatureEngineer:
                 self.df["MesinCuci_EstimasiDurasiSekaliPakaiJam"]
             ) / 7
 
-            self.df["MesinCuci_Energi_KwhPerHari"] = (
+            self.df["MesinCuci_Energi_kWhPerHari"] = (
                 self.df["MesinCuci_Energi_WhPerHari"] / 1000
             )
 
@@ -84,11 +86,11 @@ class FeatureEngineer:
     def total_energy(self):
         main_cols = [
             "Kulkas_Energi_kWhPerHari",
-            "MesinCuci_Energi_kWhPerHari",
             "TV_Energi_kWhPerHari",
             "AC_Energi_kWhPerHari",
-            "Kulkas_Energi_kWhPerHari",
+            "Kipas_Energi_kWhPerHari",
             "RiceCooker_Energi_kWhPerHari",
+            "MesinCuci_Energi_kWhPerHari",
         ]
 
         main_exists = [c for c in main_cols if c in self.df.columns]
@@ -114,37 +116,68 @@ class FeatureEngineer:
 
         return self
 
+    def monthly_energy_features(self):
+        energy_columns = [
+            "Total_Energi_Utama_kWhPerHari",
+            "Total_Energi_Alat_Lain_kWhPerHari",
+            "Total_Energi_Semua_kWhPerHari",
+        ]
+
+        for daily_col in energy_columns:
+            if daily_col in self.df.columns:
+                monthly_col = daily_col.replace("kWhPerHari", "kWhPerBulan")
+                self.df[monthly_col] = self.df[daily_col] * self.DAYS_PER_MONTH
+
+        if "Total_Energi_Semua_kWhPerBulan" in self.df.columns:
+            self.df["Estimasi_Energi_Bulanan_kWh"] = self.df["Total_Energi_Semua_kWhPerBulan"]
+
+        return self
 
     def prepaid_features(self):
-        if "Nominal_Token_Terakhir_Rp" in self.df.columns:
+        required_cols = [
+            "Nominal_Token_Terakhir_Rp",
+            "Frekuensi_Isi_Token_Per_Bulan",
+            "Total_Energi_Semua_kWhPerBulan",
+        ]
+
+        if all(col in self.df.columns for col in required_cols):
+            safe_frequency = self.df["Frekuensi_Isi_Token_Per_Bulan"].replace(0, 1e-6)
+            safe_monthly_energy = self.df["Total_Energi_Semua_kWhPerBulan"] + 1e-6
+
+            self.df["Estimasi_Energi_Per_Transaksi_kWh"] = (
+                self.df["Total_Energi_Semua_kWhPerBulan"] / safe_frequency
+            )
+
+            self.df["Estimasi_Pengeluaran_Token_Bulanan"] = (
+                self.df["Nominal_Token_Terakhir_Rp"] *
+                self.df["Frekuensi_Isi_Token_Per_Bulan"]
+            )
+
             self.df["Rasio_Token_Terhadap_Energi"] = (
                 self.df["Nominal_Token_Terakhir_Rp"] /
-                (self.df["Total_Energi_Semua_kWhPerHari"] + 1e-6)
+                (self.df["Estimasi_Energi_Per_Transaksi_kWh"] + 1e-6)
             )
 
-            self.df["Estimasi_Energi_Bulanan_kWh"] = (
-                self.df["Total_Energi_Semua_kWhPerHari"] * 30
+            self.df["Rasio_Pengeluaran_Token_Terhadap_Energi_Bulanan"] = (
+                self.df["Estimasi_Pengeluaran_Token_Bulanan"] /
+                safe_monthly_energy
             )
 
-            if "Frekuensi_Isi_Token_Per_Bulan" in self.df.columns:
-                self.df["Estimasi_Pengeluaran_Token_Bulanan"] = (
-                    self.df["Nominal_Token_Terakhir_Rp"] *
-                    self.df["Frekuensi_Isi_Token_Per_Bulan"]
-                )
+            self.df["Estimasi_Durasi_Token_Dari_Frekuensi_Hari"] = (
+                self.DAYS_PER_MONTH / safe_frequency
+            )
         
         return self
     
     def postpaid_features(self):
-        self.df["Estimasi_Energi_Bulanan_kWh"] = self.df["Total_Energi_Semua_kWhPerHari"] * 30
-
         if "Bulan_Tagihan" in self.df.columns:
             self.df["Bulan_Tagihan"] = self.df["Bulan_Tagihan"].map(config['month_mapping'])
 
-        # additional features to capture interaction between energy consumption and billing cycle
         if "Bulan_Tagihan" in self.df.columns:
-            self.df["Rasio_Bulan_Tagihan_Energi"] = (
-                self.df["Bulan_Tagihan"] /
-                (self.df["Total_Energi_Semua_kWhPerHari"] + 1e-6)
+            self.df["Siklus_Tagihan_Hari"] = self.DAYS_PER_MONTH
+            self.df["Rata_Rata_Energi_Harian_Dari_Bulanan_kWh"] = (
+                self.df["Total_Energi_Semua_kWhPerBulan"] /
+                self.df["Siklus_Tagihan_Hari"]
             )
 
         return self
@@ -161,8 +194,8 @@ class FeatureEngineer:
         (
             self.calculate_daily_energy()
             .calculate_washing_machine_energy()
-            .calculate_washing_machine_energy()
             .total_energy()
+            .monthly_energy_features()
         )
 
         if self.dataset_type == "prabayar":

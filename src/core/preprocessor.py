@@ -119,7 +119,7 @@ class Preprocessor:
             q3 = df[col].quantile(0.75)
             iqr = q3 - q1
 
-            if pd.isna(iqr):
+            if pd.isna(iqr) or iqr == 0:
                 continue
 
             self.outlier_bounds[col] = (q1 - 1.5 * iqr, q3 + 1.5 * iqr)
