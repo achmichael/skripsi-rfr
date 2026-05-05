@@ -19,11 +19,27 @@ class Preprocessor:
         self.columns_after_encoding = None
 
     def fit(self, df):
-        prepared = self._prepare_base(df)
+        prepared = df.copy()
+        
+        # 1. Drop unused columns first
+        existing_unused_cols = [col for col in self.unused_columns if col in prepared.columns]
+        prepared = prepared.drop(columns=existing_unused_cols)
+        
+        # 2. Convert data types appropriately (replace text strings to NaN before imputation)
+        prepared = self._convert_numeric_columns(prepared)
+        
+        # 3. Handle missing values (calculation/fitting first)
         self._fit_missing_values(prepared)
         prepared = self._apply_missing_values(prepared)
+        
+        # 4. Do Feature Engineering using the clean dataframe (now completely free of NaN)
+        prepared = FeatureEngineer(prepared, dataset_type=self.dataset_type).engineer_features()
+        
+        # 5. Fit outlier bounds (if applicable)
         self._fit_outlier_bounds(prepared)
         prepared = self._apply_outlier_bounds(prepared)
+        
+        # 6. Fit One-hot Encoding
         encoded = self._one_hot_encode(prepared)
         self.columns_after_encoding = list(encoded.columns)
         return self
@@ -32,9 +48,19 @@ class Preprocessor:
         if self.columns_after_encoding is None:
             raise RuntimeError("Preprocessor must be fitted before calling transform().")
 
-        prepared = self._prepare_base(df)
+        prepared = df.copy()
+        
+        existing_unused_cols = [col for col in self.unused_columns if col in prepared.columns]
+        prepared = prepared.drop(columns=existing_unused_cols)
+        
+        prepared = self._convert_numeric_columns(prepared)
+        
         prepared = self._apply_missing_values(prepared)
+        
+        prepared = FeatureEngineer(prepared, dataset_type=self.dataset_type).engineer_features()
+        
         prepared = self._apply_outlier_bounds(prepared)
+        
         encoded = self._one_hot_encode(prepared)
         encoded = encoded.reindex(columns=self.columns_after_encoding, fill_value=0)
         self._validate_numeric(encoded)
@@ -44,27 +70,24 @@ class Preprocessor:
         self.fit(df)
         return self.transform(df)
 
-    def _prepare_base(self, df):
-        prepared = df.copy()
-        existing_unused_cols = [col for col in self.unused_columns if col in prepared.columns]
-        prepared = prepared.drop(columns=existing_unused_cols)
-        prepared = self._convert_numeric_columns(prepared)
-        prepared = FeatureEngineer(prepared, dataset_type=self.dataset_type).engineer_features()
-        return prepared
-
     def _convert_numeric_columns(self, df):
         converted = df.copy()
+
+        # Custom logic for "Tidak diisi" and "Tidak tahu" strings before coercion
+        converted.replace(["Tidak diisi", "Tidak tahu"], pd.NA, inplace=True)
 
         for col in converted.columns:
             if col not in self.numeric_columns:
                 continue
 
+            # Strip non-numeric characters for valid conversion and force empty to NA
             converted[col] = (
                 converted[col]
                 .astype(str)
                 .str.replace(r"[^\d.\-]", "", regex=True)
                 .replace("", pd.NA)
             )
+            # Convert to numeric, unparseable values become NaN
             converted[col] = pd.to_numeric(converted[col], errors="coerce")
 
         return converted

@@ -158,6 +158,13 @@ class FeatureEngineer:
                 (self.df["Estimasi_Energi_Per_Transaksi_kWh"] + 1e-6)
             )
 
+            # tambahkan logging untuk mengetahui apakah terdapat baris yang mempunyai nilai 0 atau NaN pada kolom Daya_Listrik_Rumah_VA
+            zero_or_nan_rows = self.df[(self.df["Daya_Listrik_Rumah_VA"].isnull())]
+            if not zero_or_nan_rows.empty:
+                print(f"Found {len(zero_or_nan_rows)} rows with 0 or NaN values in 'Daya_Listrik_Rumah_VA'.")
+
+            self.df["Rasio_Token_Daya_VA"] = self.df["Nominal_Token_Terakhir_Rp"] / self.df["Daya_Listrik_Rumah_VA"]
+            
             self.df["Rasio_Pengeluaran_Token_Terhadap_Energi_Bulanan"] = (
                 self.df["Estimasi_Pengeluaran_Token_Bulanan"] /
                 safe_monthly_energy
@@ -194,6 +201,7 @@ class FeatureEngineer:
         (
             self.calculate_daily_energy()
             .calculate_washing_machine_energy()
+            .calculate_other_devices()
             .total_energy()
             .monthly_energy_features()
         )
