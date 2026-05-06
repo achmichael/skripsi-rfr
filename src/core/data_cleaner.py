@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from utils.config import config
 
 # this class is for cleaning the dataset, such as handling missing values, converting data types, delete unused columns, handling outliers, and other data cleaning steps
@@ -32,6 +33,23 @@ class DataCleaner:
         
     def convert_data_types(self):
         print("\nConverting data types...")
+
+        # replace "Tidak diisi" with NaN first, so that it can be handled in the numeric conversion step
+        self.df.replace("Tidak diisi", np.nan, inplace=True)
+        self.df.replace("Tidak tahu", np.nan, inplace=True)
+
+        # fill missing values or NaN in "Daya_Listrik_Rumah_VA" with modus value
+        if "Daya_Listrik_Rumah_VA" in self.df.columns:
+            modus_value = self.df["Daya_Listrik_Rumah_VA"].mode()[0]
+            self.df["Daya_Listrik_Rumah_VA"] = pd.to_numeric(self.df["Daya_Listrik_Rumah_VA"], errors='coerce')
+            self.df["Daya_Listrik_Rumah_VA"] = self.df["Daya_Listrik_Rumah_VA"].replace(0, np.nan)
+            self.df["Daya_Listrik_Rumah_VA"] = self.df["Daya_Listrik_Rumah_VA"].fillna(modus_value)
+
+        cols_to_convert = [col for col in self.df.columns if "Estimasi" in col or "Jumlah" in col]
+
+        for col in cols_to_convert:
+            self.df[col] = pd.to_numeric(self.df[col], errors='coerce')
+        
         numeric_columns = set(config['numeric_features'].get(self.dataset_type, []))
         numeric_columns.add(config['target'].get(self.dataset_type))
 
