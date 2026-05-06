@@ -5,4 +5,11 @@ outputs/
 results/
 /*.log
 *.pyc
-__pycache__/*
+*.pyo
+*.pyd
+__pycache__/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
