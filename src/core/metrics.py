@@ -18,3 +18,17 @@ def root_mean_squared_error(y_true, y_pred):
 def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
+def calculate_mean_baseline_metrics(y_train, y_test):
+    baseline_prediction = np.full(len(y_test), np.mean(y_train))
+    return calculate_metrics(y_test, baseline_prediction)
+
+def calculate_metrics(y_true, y_pred):
+    metrics = {
+        "MAE": mean_absolute_error(y_true, y_pred),
+        "MSE": mean_squared_error(y_true, y_pred),
+        "RMSE": root_mean_squared_error(y_true, y_pred),
+        "R2": r2_score(y_true, y_pred),
+        "MAPE": mean_absolute_percentage_error(y_true, y_pred),
+    }
+
+    return {name: float(value) for name, value in metrics.items()}

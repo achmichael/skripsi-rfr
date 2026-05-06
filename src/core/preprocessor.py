@@ -66,6 +66,38 @@ class Preprocessor:
         self._validate_numeric(encoded)
         return encoded
 
+    def clean_raw_dataset(self, df, dataset_type):
+        cleaned = df.copy()
+        target_column = config["target"][dataset_type]
+        cleaning_config = config.get("target_cleaning", {}).get(dataset_type, {})
+
+        if target_column in cleaned.columns:
+            cleaned[target_column] = (
+                cleaned[target_column]
+                .astype(str)
+                .str.replace(r"[^\d.\-]", "", regex=True)
+                .replace("", pd.NA)
+            )
+            cleaned[target_column] = pd.to_numeric(cleaned[target_column], errors="coerce")
+            cleaned = cleaned.dropna(subset=[target_column]).reset_index(drop=True)
+
+        if dataset_type == "pascabayar" and cleaning_config.get("enabled", False):
+            threshold = cleaning_config.get("small_bill_threshold", 1000)
+            multiplier = cleaning_config.get("small_bill_multiplier", 1000)
+            small_bill_mask = (
+                cleaned[target_column].gt(0) &
+                cleaned[target_column].lt(threshold)
+            )
+            corrected_count = int(small_bill_mask.sum())
+
+            if corrected_count > 0:
+                cleaned.loc[small_bill_mask, target_column] = (
+                    cleaned.loc[small_bill_mask, target_column] * multiplier
+                )
+                print(f"Corrected {corrected_count} small pascabayar bill values.")
+
+        return cleaned
+    
     def fit_transform(self, df):
         self.fit(df)
         return self.transform(df)

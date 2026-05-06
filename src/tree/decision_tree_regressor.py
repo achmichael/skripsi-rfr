@@ -24,6 +24,7 @@ class DecisionTreeRegressor:
         self.n_features_ = X.shape[1]
 
         self.feature_importances_ = np.zeros(self.n_features_)
+        self.rng = np.random.default_rng(self.random_state)
 
         self.root = self._build_tree(X, y, 0)
 
@@ -85,7 +86,6 @@ class DecisionTreeRegressor:
         else:
             raise ValueError("max_features must be 'sqrt', 'third', 'all', None, or an integer")
 
-        self.rng = np.random.default_rng(self.random_state)
         return self.rng.choice(self.n_features_, size=n_selected, replace=False)
 
     def _best_split(self, X, y, feature_indices):

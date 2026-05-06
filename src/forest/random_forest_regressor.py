@@ -31,7 +31,6 @@ class RandomForestRegressor:
     
     def predict(self, X):
         tree_predictions = np.array([tree.predict(X) for tree in self.trees])
-        print(f"Predictions shape from all trees: {tree_predictions.shape}")
         return np.mean(tree_predictions, axis=0)
     
     def score(self, X, y):
@@ -40,5 +39,4 @@ class RandomForestRegressor:
         ss_tot = np.sum((y - np.mean(y)) ** 2)
         r2_score = 1 - (ss_res / ss_tot)
         return r2_score
-
 

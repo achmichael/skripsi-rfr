@@ -54,6 +54,24 @@ config = {
         }
     },
 
+    "target_cleaning": {
+        "pascabayar": {
+            "enabled": True,
+            "small_bill_threshold": 1000,
+            "small_bill_multiplier": 1000
+        }
+    },
+
+    "cross_validation": {
+        "enabled": True,
+        "n_splits": 5
+    },
+
+    "target_transform": {
+        "prabayar": "none",
+        "pascabayar": "none"
+    },
+
     "paths": {
         "raw_data": {
             "prabayar": "data/raw/prabayar.csv",
@@ -254,6 +272,7 @@ config = {
         "prabayar": [
             "Timestamp",
             "Nama/Inisial",
+            "Kota/Kabupaten",
             "Jenis_Listrik",
 
             # Optional: redundant Wh columns because kWh columns are already used
@@ -274,6 +293,7 @@ config = {
         "pascabayar": [
             "Timestamp",
             "Nama/Inisial",
+            "Kota/Kabupaten",
             "Jenis_Listrik",
 
             # Optional: redundant Wh columns because kWh columns are already used

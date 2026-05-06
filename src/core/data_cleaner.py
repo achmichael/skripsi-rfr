@@ -93,6 +93,7 @@ class DataCleaner:
         else:
             print("Outlier handling is disabled or method is not supported.")
 
+
     def clean_data(self, unused_cols):
         self.handle_missing_values()
         self.convert_data_types()
