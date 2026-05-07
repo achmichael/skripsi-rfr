@@ -7,6 +7,24 @@ from utils.config import config
 
 
 class Preprocessor:
+    NO_USAGE_CATEGORY_BY_DEVICE = {
+        "Kulkas": "Tidak ada",
+        "TV": "Tidak ada / tidak digunakan",
+        "AC": "Tidak ada / tidak digunakan",
+        "Kipas": "Tidak ada / tidak digunakan",
+        "RiceCooker": "Tidak ada / tidak digunakan",
+        "MesinCuci": "Tidak ada / tidak digunakan",
+    }
+
+    DEVICE_DEPENDENT_SUFFIXES = [
+        "_EstimasiWattPerUnit",
+        "_EstimasiJamPerHari",
+        "_EstimasiFrekuensiPerMinggu",
+        "_EstimasiDurasiSekaliPakaiJam",
+        "_Energi_WhPerHari",
+        "_Energi_kWhPerHari",
+    ]
+
     def __init__(self, dataset_type):
         self.dataset_type = dataset_type
         self.target_column = config["target"][dataset_type]
@@ -32,6 +50,7 @@ class Preprocessor:
         # 3. Handle missing values (calculation/fitting first)
         self._fit_missing_values(prepared)
         prepared = self._apply_missing_values(prepared)
+        prepared = self._normalize_device_consistency(prepared)
         
         # 4. Do Feature Engineering using the clean dataframe (now completely free of NaN)
         prepared = FeatureEngineer(prepared, dataset_type=self.dataset_type).engineer_features()
@@ -39,6 +58,7 @@ class Preprocessor:
         # 5. Fit outlier bounds (if applicable)
         self._fit_outlier_bounds(prepared)
         prepared = self._apply_outlier_bounds(prepared)
+        prepared = self._normalize_device_consistency(prepared)
         
         # 6. Fit One-hot Encoding
         encoded = self._one_hot_encode(prepared)
@@ -57,10 +77,12 @@ class Preprocessor:
         prepared = self._convert_numeric_columns(prepared)
         
         prepared = self._apply_missing_values(prepared)
+        prepared = self._normalize_device_consistency(prepared)
         
         prepared = FeatureEngineer(prepared, dataset_type=self.dataset_type).engineer_features()
         
         prepared = self._apply_outlier_bounds(prepared)
+        prepared = self._normalize_device_consistency(prepared)
         
         encoded = self._one_hot_encode(prepared)
         encoded = encoded.reindex(columns=self.columns_after_encoding, fill_value=0)
@@ -157,6 +179,52 @@ class Preprocessor:
                 filled[col] = filled[col].fillna(value)
 
         return filled
+
+    def _normalize_device_consistency(self, df):
+        normalized = df.copy()
+
+        for device, no_usage_category in self.NO_USAGE_CATEGORY_BY_DEVICE.items():
+            jumlah_col = f"{device}_Jumlah"
+            kategori_col = f"{device}_Kategori"
+
+            if jumlah_col not in normalized.columns:
+                continue
+
+            jumlah = pd.to_numeric(normalized[jumlah_col], errors="coerce")
+            inactive_mask = jumlah.le(0).fillna(False)
+
+            if not inactive_mask.any():
+                continue
+
+            normalized.loc[inactive_mask, jumlah_col] = 0
+
+            if kategori_col in normalized.columns:
+                normalized.loc[inactive_mask, kategori_col] = no_usage_category
+
+            for suffix in self.DEVICE_DEPENDENT_SUFFIXES:
+                col = f"{device}{suffix}"
+                if col in normalized.columns:
+                    normalized.loc[inactive_mask, col] = 0
+
+        if "Alat_Lain_Ada" in normalized.columns:
+            no_other_device_mask = normalized["Alat_Lain_Ada"].astype(str).str.lower().eq("tidak")
+
+            if no_other_device_mask.any():
+                for i in range(1, 4):
+                    prefix = f"Alat_Lain_{i}"
+
+                    for col in [f"{prefix}_Jenis", f"{prefix}_Kategori"]:
+                        if col in normalized.columns:
+                            normalized.loc[no_other_device_mask, col] = "Tidak diisi"
+
+                    numeric_cols = [
+                        col for col in normalized.columns
+                        if col.startswith(prefix) and ("Estimasi" in col or "Energi" in col)
+                    ]
+                    for col in numeric_cols:
+                        normalized.loc[no_other_device_mask, col] = 0
+
+        return normalized
 
     def _fit_outlier_bounds(self, df):
         if not config["data_preprocessing"]["handle_outliers"]:
