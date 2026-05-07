@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from pandas.api.types import is_object_dtype, is_string_dtype
 
 from core.feature_engineer import FeatureEngineer
@@ -203,3 +204,13 @@ class Preprocessor:
 
         if len(non_numeric_cols) > 0:
             raise ValueError(f"Non-numeric columns remain after preprocessing: {list(non_numeric_cols)}")
+
+        missing_cols = df.columns[df.isna().any()]
+        if len(missing_cols) > 0:
+            raise ValueError(f"Missing values remain after preprocessing: {list(missing_cols)}")
+
+        numeric = df.select_dtypes(include=["number"])
+        non_finite_mask = ~np.isfinite(numeric.to_numpy()).all(axis=0)
+        non_finite_cols = numeric.columns[non_finite_mask]
+        if len(non_finite_cols) > 0:
+            raise ValueError(f"Non-finite numeric values remain after preprocessing: {list(non_finite_cols)}")

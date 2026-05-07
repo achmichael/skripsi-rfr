@@ -18,6 +18,20 @@ def print_metrics(title, metrics):
     for metric_name, metric_value in metrics.items():
         print(f"{metric_name}: {metric_value}")
 
+def print_top_feature_importances(model, top_n=15):
+    if not hasattr(model, "feature_importances_") or len(model.feature_importances_) == 0:
+        return
+
+    feature_importances = sorted(
+        zip(model.feature_names_, model.feature_importances_),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+
+    print(f"Top {top_n} Feature Importances:")
+    for feature_name, importance in feature_importances[:top_n]:
+        print(f"{feature_name}: {float(importance)}")
+
 
 def split_raw_dataset(df, train_ratio=0.8, random_state=42, shuffle=True):
     indices = np.arange(len(df))
@@ -156,14 +170,21 @@ def main(dataset_type):
 
     print_metrics("Evaluation Metrics:", evaluation_metrics)
     print_metrics("Mean Baseline Metrics:", baseline_metrics)
+    print(f"Feature count used by model: {X_train.shape[1]}")
+    print_top_feature_importances(rf)
 
     file_writer = FileWriter()
     file_writer.save_model(rf, dataset_type)
     file_writer.save_evaluation_results(evaluation_metrics, dataset_type)
+    file_writer.save_feature_log(
+        dataset_type,
+        X_train.columns,
+        getattr(rf, "feature_importances_", None),
+    )
     file_writer.save_metric_bar(evaluation_metrics, dataset_type)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train model for prabayar or pascabayar dataset")
     parser.add_argument("--dataset", choices=["prabayar", "pascabayar"], required=True)
-    args = parser.parse_args()
+    args = parser.parse_args()    
     main(args.dataset)

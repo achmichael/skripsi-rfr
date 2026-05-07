@@ -1,3 +1,5 @@
+import numpy as np
+
 # this code is for feature engineering, which is the process of creating new features from existing data to improve the performance of models random forest regression
 from utils.config import config
 
@@ -178,13 +180,62 @@ class FeatureEngineer:
     
     def postpaid_features(self):
         if "Bulan_Tagihan" in self.df.columns:
-            self.df["Bulan_Tagihan"] = self.df["Bulan_Tagihan"].map(config['month_mapping'])
+            month_number = self.df["Bulan_Tagihan"].map(config['month_mapping'])
+            month_mode = month_number.mode(dropna=True)
+            month_fallback = 1 if month_mode.empty else month_mode.iloc[0]
+            self.df["Bulan_Tagihan"] = month_number.fillna(month_fallback)
 
         if "Bulan_Tagihan" in self.df.columns:
             self.df["Siklus_Tagihan_Hari"] = self.DAYS_PER_MONTH
+            self.df["Bulan_Tagihan_Sin"] = np.sin(2 * np.pi * self.df["Bulan_Tagihan"] / 12)
+            self.df["Bulan_Tagihan_Cos"] = np.cos(2 * np.pi * self.df["Bulan_Tagihan"] / 12)
             self.df["Rata_Rata_Energi_Harian_Dari_Bulanan_kWh"] = (
                 self.df["Total_Energi_Semua_kWhPerBulan"] /
                 self.df["Siklus_Tagihan_Hari"]
+            )
+
+        if "Daya_Listrik_Rumah_VA" in self.df.columns:
+            safe_power = self.df["Daya_Listrik_Rumah_VA"].replace(0, 1e-6)
+            self.df["Daya_Listrik_Rumah_kVA"] = self.df["Daya_Listrik_Rumah_VA"] / 1000
+
+            if "Total_Energi_Semua_kWhPerBulan" in self.df.columns:
+                self.df["Rasio_Energi_Bulanan_Per_Daya_VA"] = (
+                    self.df["Total_Energi_Semua_kWhPerBulan"] / safe_power
+                )
+
+        if all(col in self.df.columns for col in [
+            "Daya_Listrik_Rumah_VA",
+            "Status_Subsidi_Listrik",
+            "Total_Energi_Semua_kWhPerBulan",
+        ]):
+            subsidy_text = self.df["Status_Subsidi_Listrik"].astype(str).str.lower()
+            is_subsidized = subsidy_text.eq("subsidi")
+            self.df["Status_Subsidi_Flag"] = is_subsidized.astype(int)
+
+            tariff = np.select(
+                [
+                    is_subsidized & self.df["Daya_Listrik_Rumah_VA"].le(450),
+                    is_subsidized & self.df["Daya_Listrik_Rumah_VA"].le(900),
+                    self.df["Daya_Listrik_Rumah_VA"].le(900),
+                    self.df["Daya_Listrik_Rumah_VA"].le(1300),
+                ],
+                [
+                    415,
+                    605,
+                    1352,
+                    1445,
+                ],
+                default=1445,
+            )
+
+            self.df["Tarif_Estimasi_RpPerkWh"] = tariff
+            self.df["Estimasi_Tagihan_Energi_Bulanan_Rp"] = (
+                self.df["Total_Energi_Semua_kWhPerBulan"] *
+                self.df["Tarif_Estimasi_RpPerkWh"]
+            )
+            self.df["Rasio_Estimasi_Tagihan_Per_Daya_VA"] = (
+                self.df["Estimasi_Tagihan_Energi_Bulanan_Rp"] /
+                self.df["Daya_Listrik_Rumah_VA"].replace(0, 1e-6)
             )
 
         return self

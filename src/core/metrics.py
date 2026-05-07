@@ -10,25 +10,56 @@ def mean_squared_error(y_true, y_pred):
 def r2_score(y_true, y_pred):
     ss_res = np.sum((y_true - y_pred) ** 2)
     ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+    if ss_tot == 0:
+        return 1.0 if ss_res == 0 else 0.0
     return 1 - (ss_res / ss_tot)
 
 def root_mean_squared_error(y_true, y_pred):
     return np.sqrt(mean_squared_error(y_true, y_pred))
 
 def mean_absolute_percentage_error(y_true, y_pred):
-    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    non_zero_mask = y_true != 0
+    if not np.any(non_zero_mask):
+        return np.nan
+    return np.mean(np.abs((y_true[non_zero_mask] - y_pred[non_zero_mask]) / y_true[non_zero_mask])) * 100
+
+def weighted_absolute_percentage_error(y_true, y_pred):
+    denominator = np.sum(np.abs(y_true))
+    if denominator == 0:
+        return np.nan
+    return np.sum(np.abs(y_true - y_pred)) / denominator * 100
+
+def normalized_mean_absolute_error(y_true, y_pred):
+    denominator = np.mean(np.abs(y_true))
+    if denominator == 0:
+        return np.nan
+    return mean_absolute_error(y_true, y_pred) / denominator * 100
+
+def normalized_root_mean_squared_error(y_true, y_pred):
+    denominator = np.mean(np.abs(y_true))
+    if denominator == 0:
+        return np.nan
+    return root_mean_squared_error(y_true, y_pred) / denominator * 100
 
 def calculate_mean_baseline_metrics(y_train, y_test):
     baseline_prediction = np.full(len(y_test), np.mean(y_train))
     return calculate_metrics(y_test, baseline_prediction)
 
 def calculate_metrics(y_true, y_pred):
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+
     metrics = {
         "MAE": mean_absolute_error(y_true, y_pred),
         "MSE": mean_squared_error(y_true, y_pred),
         "RMSE": root_mean_squared_error(y_true, y_pred),
         "R2": r2_score(y_true, y_pred),
         "MAPE": mean_absolute_percentage_error(y_true, y_pred),
+        "WAPE": weighted_absolute_percentage_error(y_true, y_pred),
+        "NMAE": normalized_mean_absolute_error(y_true, y_pred),
+        "NRMSE": normalized_root_mean_squared_error(y_true, y_pred),
     }
 
     return {name: float(value) for name, value in metrics.items()}

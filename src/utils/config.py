@@ -5,21 +5,21 @@
 config = {
     "random_forest": {
         # Number of trees in the forest
-        "n_estimators": 300,
+        "n_estimators": 100,
 
         # Maximum depth of each decision tree
         # None means the tree grows until stopping criteria are met
-        "max_depth": 12,
+        "max_depth": 16,
 
         # Minimum number of samples required to split an internal node
         "min_samples_split": 5,
 
         # Minimum number of samples required to be in a leaf node
-        "min_samples_leaf": 3,
+        "min_samples_leaf": 2,
 
         # Number of random features considered at each split
         # Options: "sqrt", "third", "all", or integer value
-        "max_features": "sqrt",
+        "max_features": "third",
 
         # Bootstrap sampling for each tree
         "bootstrap": True,
@@ -116,9 +116,9 @@ config = {
             "Kota/Kabupaten",
             "Jumlah_Anggota_Keluarga",
             "Daya_Listrik_Rumah_VA",
+            "Status_Subsidi_Listrik",
             "Nominal_Token_Terakhir_Rp",
             "Frekuensi_Isi_Token_Per_Bulan",
-
             "Kulkas_Jumlah",
             "Kulkas_Kategori",
             "Kulkas_EstimasiWattPerUnit",
@@ -185,6 +185,7 @@ config = {
             "Kota/Kabupaten",
             "Jumlah_Anggota_Keluarga",
             "Daya_Listrik_Rumah_VA",
+            "Status_Subsidi_Listrik",
             "Bulan_Tagihan",
             "Tagihan_Relatif_Stabil",
 
@@ -253,6 +254,7 @@ config = {
 
     "one_hot_columns": [
         "Kota/Kabupaten",
+        "Status_Subsidi_Listrik",
         "Kulkas_Kategori",
         "TV_Kategori",
         "AC_Kategori",
@@ -315,6 +317,7 @@ config = {
     "categorical_features": {
         "prabayar": [
             "Kota/Kabupaten",
+            "Status_Subsidi_Listrik",
             "Kulkas_Kategori",
             "TV_Kategori",
             "AC_Kategori",
@@ -332,6 +335,7 @@ config = {
 
         "pascabayar": [
             "Kota/Kabupaten",
+            "Status_Subsidi_Listrik",
             "Bulan_Tagihan",
             "Tagihan_Relatif_Stabil",
             "Kulkas_Kategori",
@@ -489,6 +493,10 @@ config = {
         "MAE",
         "MSE",
         "RMSE",
-        "R2"
+        "R2",
+        "MAPE",
+        "WAPE",
+        "NMAE",
+        "NRMSE"
     ]
 }

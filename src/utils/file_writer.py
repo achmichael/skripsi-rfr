@@ -100,3 +100,35 @@ class FileWriter:
             json.dump(results, f, indent=4)
 
         print("Evaluation results saved:", path)
+
+    def save_feature_log(self, dataset_type, feature_names, feature_importances=None, top_n=30):
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"features_{dataset_type}_{timestamp}.json"
+        path = os.path.join(self.output_dir, filename)
+
+        feature_importance_rows = []
+        if feature_importances is not None and len(feature_importances) == len(feature_names):
+            feature_importance_rows = sorted(
+                [
+                    {
+                        "feature": feature_name,
+                        "importance": float(importance),
+                    }
+                    for feature_name, importance in zip(feature_names, feature_importances)
+                ],
+                key=lambda row: row["importance"],
+                reverse=True,
+            )
+
+        results = {
+            "dataset": dataset_type,
+            "feature_count": len(feature_names),
+            "features": list(feature_names),
+            "top_feature_importances": feature_importance_rows[:top_n],
+            "timestamp": timestamp,
+        }
+
+        with open(path, "w") as f:
+            json.dump(results, f, indent=4)
+
+        print("Feature log saved:", path)
