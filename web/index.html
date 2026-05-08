@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prediksi Konsumsi Listrik</title>
+    <link rel="stylesheet" href="./static/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Random Forest Regressor</p>
+          <h1>Prediksi Konsumsi Listrik Rumah</h1>
+        </div>
+        <div class="model-status" id="modelStatus">Memuat model</div>
+      </header>
+
+      <section class="workspace">
+        <form class="input-panel" id="predictionForm">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">Tipe listrik</p>
+              <h2>Profil pelanggan</h2>
+            </div>
+            <div class="segmented" role="tablist" aria-label="Tipe listrik">
+              <button type="button" class="segment active" data-dataset="prabayar">Prabayar</button>
+              <button type="button" class="segment" data-dataset="pascabayar">Pascabayar</button>
+            </div>
+          </div>
+
+          <div class="field-grid compact">
+            <label class="field">
+              <span>Jumlah anggota keluarga</span>
+              <input name="jumlah_anggota" type="number" min="1" step="1" value="4" />
+            </label>
+            <label class="field">
+              <span>Daya listrik</span>
+              <select name="daya_listrik">
+                <option value="450">450 VA</option>
+                <option value="900" selected>900 VA</option>
+                <option value="1300">1300 VA</option>
+                <option value="2200">2200 VA</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Status subsidi</span>
+              <select name="status_subsidi">
+                <option>Non Subsidi</option>
+                <option>Subsidi</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="field-grid compact dataset-only" data-show="prabayar">
+            <label class="field">
+              <span>Nominal token terakhir</span>
+              <input name="nominal_token" type="number" min="0" step="5000" value="100000" />
+            </label>
+            <label class="field">
+              <span>Frekuensi isi token per bulan</span>
+              <input name="frekuensi_token" type="number" min="0.1" step="0.1" value="2" />
+            </label>
+          </div>
+
+          <div class="field-grid compact dataset-only hidden" data-show="pascabayar">
+            <label class="field">
+              <span>Bulan tagihan</span>
+              <select name="bulan_tagihan">
+                <option>Januari</option>
+                <option>Februari</option>
+                <option>Maret</option>
+                <option>April</option>
+                <option>Mei</option>
+                <option>Juni</option>
+                <option>Juli</option>
+                <option>Agustus</option>
+                <option>September</option>
+                <option>Oktober</option>
+                <option>November</option>
+                <option>Desember</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Tagihan relatif stabil</span>
+              <select name="tagihan_stabil">
+                <option>Ya</option>
+                <option>Tidak</option>
+              </select>
+            </label>
+          </div>
+
+          <section class="form-section">
+            <div class="section-title">
+              <p class="section-kicker">Peralatan utama</p>
+              <h2>Pola pemakaian harian</h2>
+            </div>
+            <div class="device-grid" id="deviceGrid"></div>
+          </section>
+
+          <section class="form-section">
+            <div class="section-title inline">
+              <div>
+                <p class="section-kicker">Tambahan</p>
+                <h2>Peralatan lain</h2>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="otherEnabled" />
+                <span></span>
+              </label>
+            </div>
+            <div class="other-grid disabled" id="otherGrid"></div>
+          </section>
+
+          <div class="actions">
+            <button type="button" class="secondary-button" id="resetButton">Reset</button>
+            <button type="submit" class="primary-button">
+              <span>Hitung prediksi</span>
+              <span class="button-mark">-></span>
+            </button>
+          </div>
+        </form>
+
+        <aside class="result-panel" aria-live="polite">
+          <div class="result-card">
+            <p class="section-kicker">Hasil prediksi</p>
+            <div class="result-value" id="resultValue">-</div>
+            <div class="result-label" id="resultLabel">Belum ada hasil prediksi.</div>
+          </div>
+
+          <div class="metric-list">
+            <div class="metric-row">
+              <span>Total energi harian</span>
+              <strong id="dailyEnergy">-</strong>
+            </div>
+            <div class="metric-row">
+              <span>Total energi bulanan</span>
+              <strong id="monthlyEnergy">-</strong>
+            </div>
+            <div class="metric-row">
+              <span>Model aktif</span>
+              <strong id="activeModel">-</strong>
+            </div>
+          </div>
+
+        </aside>
+      </section>
+    </main>
+
+    <script src="./static/app.js"></script>
+  </body>
+</html>
