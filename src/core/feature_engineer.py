@@ -178,6 +178,39 @@ class FeatureEngineer:
         
         return self
     
+    def estimate_bill_amount(self, kwh, daya_va):
+        tarif_map = {
+            (True, 450): 415,
+            (True, 900): 605,
+            (False, 900): 1352,
+            (False, 1300): 1444.70,
+            (False, 2200): 1444.70,
+            (False, 3500): 1699.53,
+            (False, 4400): 1699.53,
+        }
+
+        tarif = tarif_map.get(daya_va)
+        if tarif is None:
+            if daya_va <= 450:
+                tarif = tarif_map[(True, 450)]
+            elif daya_va <= 900:
+                tarif = tarif_map[(True, 900)]
+            elif daya_va <= 1300:
+                tarif = tarif_map[(False, 1300)]
+            elif daya_va <= 2200:
+                tarif = tarif_map[(False, 2200)]
+            elif daya_va <= 3500:
+                tarif = tarif_map[(False, 3500)]
+            else:
+                tarif = tarif_map[(False, 4400)]
+        
+        base_bill = kwh * tarif 
+        ppj_rate = 0.03
+        ppj = base_bill * ppj_rate
+        admin_fee = 3000
+
+        return base_bill + ppj + admin_fee
+
     def postpaid_features(self):
         if "Bulan_Tagihan" in self.df.columns:
             month_number = self.df["Bulan_Tagihan"].map(config['month_mapping'])
@@ -244,7 +277,6 @@ class FeatureEngineer:
     def drop_wh_columns(self):
         wh_cols = [col for col in self.df.columns if col.endswith("_Energi_WhPerHari")]
         self.df.drop(columns=wh_cols, inplace=True)
-        print(f"Dropped redundant Wh columns: {wh_cols}")
         return self
 
     # pipeline for feature engineering
