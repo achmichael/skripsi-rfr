@@ -74,6 +74,19 @@ class FileWriter:
 
         print("Metric chart saved:", path)
 
+    def residual_plot(self, y_true, y_pred):
+        residual = y_true - y_pred
+        plt.scatter(y_pred, residual, alpha=0.5)
+        plt.axhline(0, color='red')
+        plt.xlabel("Predicted")
+        plt.ylabel("Residual")
+        plt.title("Residual vs Predicted — Pascabayar")
+        plt.show()
+
+        plt.hist(residual, bins=50, edgecolor='k', alpha=0.7)
+        plt.xlabel("Distribusi Tagihan Aktual")
+        plt.show()
+        
     def save_model(self, model, model_name):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"{model_name}_{timestamp}.pkl"
@@ -124,6 +137,7 @@ class FileWriter:
             "dataset": dataset_type,
             "feature_count": len(feature_names),
             "features": list(feature_names),
+            "feature_importances": feature_importance_rows,
             "top_feature_importances": feature_importance_rows[:top_n],
             "timestamp": timestamp,
         }

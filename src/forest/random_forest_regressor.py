@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from tree.decision_tree_regressor import DecisionTreeRegressor
-from forest.bootstrap import Bootstrap
+from src.tree.decision_tree_regressor import DecisionTreeRegressor
+from src.forest.bootstrap import Bootstrap
 
 class RandomForestRegressor:
     def __init__(self, n_estimators=100, max_depth=10, min_samples_split=5, min_samples_leaf=2, max_features="sqrt", random_state=42):

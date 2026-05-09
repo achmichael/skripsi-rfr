@@ -1,6 +1,6 @@
 import pandas as pd
 from pandas.api.types import is_object_dtype, is_string_dtype
-from utils.config import config
+from src.utils.config import config
 
 class Encoder:
     def __init__(self, df, dataset_type="prabayar"):

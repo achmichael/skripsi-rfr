@@ -2,12 +2,12 @@
 import argparse
 import pandas as pd
 import numpy as np
-from core.preprocessor import Preprocessor
-from forest.random_forest_regressor import RandomForestRegressor
-from utils.config import config
-from utils.file_writer import FileWriter
-from core.metrics import calculate_mean_baseline_metrics, calculate_metrics
-from utils.core import transform_target, inverse_transform_target
+from src.core.preprocessor import Preprocessor
+from src.forest.random_forest_regressor import RandomForestRegressor
+from src.utils.config import config
+from src.utils.file_writer import FileWriter
+from src.core.metrics import calculate_mean_baseline_metrics, calculate_metrics
+from src.utils.core import transform_target, inverse_transform_target
 
 def calculate_mean_baseline_metrics(y_train, y_test):
     baseline_prediction = np.full(len(y_test), np.mean(y_train))
@@ -18,7 +18,7 @@ def print_metrics(title, metrics):
     for metric_name, metric_value in metrics.items():
         print(f"{metric_name}: {metric_value}")
 
-def print_top_feature_importances(model, top_n=15):
+def print_feature_importances(model):
     if not hasattr(model, "feature_importances_") or len(model.feature_importances_) == 0:
         return
 
@@ -28,9 +28,15 @@ def print_top_feature_importances(model, top_n=15):
         reverse=True,
     )
 
-    print(f"Top {top_n} Feature Importances:")
-    for feature_name, importance in feature_importances[:top_n]:
-        print(f"{feature_name}: {float(importance)}")
+    print("All Model Features and Importances:")
+    for rank, (feature_name, importance) in enumerate(feature_importances, start=1):
+        print(f"{rank}. {feature_name}: {float(importance)}")
+
+
+def print_model_features(feature_names):
+    print("All Model Feature Names:")
+    for rank, feature_name in enumerate(feature_names, start=1):
+        print(f"{rank}. {feature_name}")
 
 
 def split_raw_dataset(df, train_ratio=0.8, random_state=42, shuffle=True):
@@ -67,6 +73,9 @@ def build_model():
 def cross_validate_raw_dataset(df, dataset_type, n_splits=5):
     preprocessing_config = config["data_preprocessing"]
     target_column = config["target"][dataset_type]
+    print("Target col", target_column)
+    print("description", df[target_column].describe())
+
     indices = np.arange(len(df))
 
     if preprocessing_config["shuffle"]:
@@ -171,7 +180,8 @@ def main(dataset_type):
     print_metrics("Evaluation Metrics:", evaluation_metrics)
     print_metrics("Mean Baseline Metrics:", baseline_metrics)
     print(f"Feature count used by model: {X_train.shape[1]}")
-    print_top_feature_importances(rf)
+    print_model_features(X_train.columns)
+    print_feature_importances(rf)
 
     file_writer = FileWriter()
     file_writer.save_model(rf, dataset_type)

@@ -1,7 +1,12 @@
 import numpy as np
+import sys
+import os
 
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from diagnose import diagnose_correlation
 # this code is for feature engineering, which is the process of creating new features from existing data to improve the performance of models random forest regression
-from utils.config import config
+from src.utils.config import config
 
 class FeatureEngineer:
     DAYS_PER_MONTH = 30
@@ -178,7 +183,7 @@ class FeatureEngineer:
         
         return self
     
-    def estimate_bill_amount(self, kwh, daya_va):
+    def estimate_tariff(self, daya_va, is_subsidized=False):
         tarif_map = {
             (True, 450): 415,
             (True, 900): 605,
@@ -189,7 +194,7 @@ class FeatureEngineer:
             (False, 4400): 1699.53,
         }
 
-        tarif = tarif_map.get(daya_va)
+        tarif = tarif_map.get((is_subsidized, daya_va))
         if tarif is None:
             if daya_va <= 450:
                 tarif = tarif_map[(True, 450)]
@@ -203,7 +208,11 @@ class FeatureEngineer:
                 tarif = tarif_map[(False, 3500)]
             else:
                 tarif = tarif_map[(False, 4400)]
-        
+
+        return tarif
+
+    def estimate_bill_amount(self, kwh, daya_va, is_subsidized=False):
+        tarif = self.estimate_tariff(daya_va, is_subsidized=is_subsidized)
         base_bill = kwh * tarif 
         ppj_rate = 0.03
         ppj = base_bill * ppj_rate
@@ -219,12 +228,10 @@ class FeatureEngineer:
             self.df["Bulan_Tagihan"] = month_number.fillna(month_fallback)
 
         if "Bulan_Tagihan" in self.df.columns:
-            self.df["Siklus_Tagihan_Hari"] = self.DAYS_PER_MONTH
             self.df["Bulan_Tagihan_Sin"] = np.sin(2 * np.pi * self.df["Bulan_Tagihan"] / 12)
             self.df["Bulan_Tagihan_Cos"] = np.cos(2 * np.pi * self.df["Bulan_Tagihan"] / 12)
             self.df["Rata_Rata_Energi_Harian_Dari_Bulanan_kWh"] = (
-                self.df["Total_Energi_Semua_kWhPerBulan"] /
-                self.df["Siklus_Tagihan_Hari"]
+                self.df["Total_Energi_Semua_kWhPerBulan"] / self.DAYS_PER_MONTH
             )
 
         if "Daya_Listrik_Rumah_VA" in self.df.columns:
@@ -245,26 +252,22 @@ class FeatureEngineer:
             is_subsidized = subsidy_text.eq("subsidi")
             self.df["Status_Subsidi_Flag"] = is_subsidized.astype(int)
 
-            tariff = np.select(
-                [
-                    is_subsidized & self.df["Daya_Listrik_Rumah_VA"].le(450),
-                    is_subsidized & self.df["Daya_Listrik_Rumah_VA"].le(900),
-                    self.df["Daya_Listrik_Rumah_VA"].le(900),
-                    self.df["Daya_Listrik_Rumah_VA"].le(1300),
-                ],
-                [
-                    415,
-                    605,
-                    1352,
-                    1445,
-                ],
-                default=1445,
+            self.df["Tarif_Estimasi_RpPerkWh"] = self.df.apply(
+                lambda row: self.estimate_tariff(
+                    row["Daya_Listrik_Rumah_VA"],
+                    is_subsidized=row["Status_Subsidi_Flag"] == 1
+                ),
+                axis=1
             )
-
-            self.df["Tarif_Estimasi_RpPerkWh"] = tariff
             self.df["Estimasi_Tagihan_Energi_Bulanan_Rp"] = (
-                self.df["Total_Energi_Semua_kWhPerBulan"] *
-                self.df["Tarif_Estimasi_RpPerkWh"]
+                self.df.apply(
+                    lambda row: self.estimate_bill_amount(
+                        row["Total_Energi_Semua_kWhPerBulan"],
+                        row["Daya_Listrik_Rumah_VA"],
+                        is_subsidized=row["Status_Subsidi_Flag"] == 1
+                    ),
+                    axis=1
+                )
             )
             self.df["Rasio_Estimasi_Tagihan_Per_Daya_VA"] = (
                 self.df["Estimasi_Tagihan_Energi_Bulanan_Rp"] /
@@ -275,8 +278,9 @@ class FeatureEngineer:
     
     # dropout redundant features that are not needed for modeling
     def drop_wh_columns(self):
-        wh_cols = [col for col in self.df.columns if col.endswith("_Energi_WhPerHari")]
-        self.df.drop(columns=wh_cols, inplace=True)
+        existing = [col for col in config['cols_to_drop'] if col in self.df.columns]
+        self.df.drop(columns=existing, inplace=True)
+        print(f"Dropped columns: {existing}")
         return self
 
     # pipeline for feature engineering
@@ -295,6 +299,8 @@ class FeatureEngineer:
             self.postpaid_features()
 
         self.drop_wh_columns()
+        diagnose_correlation(self.df)
+
 
         return self.df
     

@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from pandas.api.types import is_object_dtype, is_string_dtype
 
-from core.feature_engineer import FeatureEngineer
-from utils.config import config
+from src.core.feature_engineer import FeatureEngineer
+from src.utils.config import config
 
 
 class Preprocessor:

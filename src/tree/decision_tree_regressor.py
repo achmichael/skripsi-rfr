@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from .decision_tree_node import TreeNode
+from src.tree.decision_tree_node import TreeNode
 
 class DecisionTreeRegressor:
     def __init__(self, max_depth=10, min_samples_split=5, min_samples_leaf=2, max_features="sqrt", random_state=42):

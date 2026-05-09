@@ -1,5 +1,5 @@
 import numpy as np
-from utils.config import config
+from src.utils.config import config
 
 def transform_target(y, dataset_type):
     transform_name = config.get("target_transform", {}).get(dataset_type, "none")

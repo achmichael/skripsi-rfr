@@ -111,6 +111,31 @@ config = {
         "pascabayar": "Rata_Rata_Tagihan_Per_Bulan_Rp"
     },
 
+    "cols_to_drop": {
+        # Duplikat alias
+        "Estimasi_Energi_Bulanan_kWh",          # = Total_Energi_Semua_kWhPerBulan
+        "Rata_Rata_Energi_Harian_Dari_Bulanan_kWh",  # = kWhPerBulan / 30
+
+        # Versi harian sudah ada, bulan hanya × 30 (tidak tambah info)
+        "Total_Energi_Alat_Lain_kWhPerBulan",
+        "Total_Energi_Utama_kWhPerBulan",
+
+        # Zero importance — RF tidak pernah memakainya
+        "Alat_Lain_1_EstimasiJamPerHari",
+        "Alat_Lain_1_Energi_kWhPerHari",
+        "Alat_Lain_2_EstimasiJamPerHari",
+        "Alat_Lain_2_Energi_kWhPerHari",
+        "Alat_Lain_3_EstimasiJamPerHari",
+        "Alat_Lain_3_Energi_kWhPerHari",
+        "Total_Energi_Alat_Lain_kWhPerHari",
+
+        # VA dan kVA adalah hal yang sama (× 1000)
+        "Daya_Listrik_Rumah_kVA",
+
+        # Duplikat subsidi
+        "Status_Subsidi_Listrik_Non Subsidi",   # inverse dari kolom Subsidi
+    },
+
     "features": {
         "prabayar": [
             "Kota/Kabupaten",

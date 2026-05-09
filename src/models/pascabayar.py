@@ -1,7 +1,7 @@
-from utils.config import config
-from core.data_cleaner import DataCleaner
-from core.feature_engineer import FeatureEngineer
-from core.encoder import Encoder
+from src.utils.config import config
+from src.core.data_cleaner import DataCleaner
+from src.core.feature_engineer import FeatureEngineer
+from src.core.encoder import Encoder
 
 class PascabayarModel:
     def __init__(self, df):

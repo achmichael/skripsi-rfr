@@ -18,9 +18,9 @@ RESULTS_DIR = ROOT_DIR / "results"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from core.preprocessor import Preprocessor
-from utils.config import config
-from utils.core import inverse_transform_target
+from src.core.preprocessor import Preprocessor
+from src.utils.config import config
+from src.utils.core import inverse_transform_target
 
 
 MAIN_DEVICES = {

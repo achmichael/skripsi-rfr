@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from utils.config import config
+from src.utils.config import config
 
 # this class is for cleaning the dataset, such as handling missing values, converting data types, delete unused columns, handling outliers, and other data cleaning steps
 class DataCleaner:
