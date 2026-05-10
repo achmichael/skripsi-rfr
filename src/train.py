@@ -1,7 +1,15 @@
 # this script are used to train both model prabayar and pascabayar separately based on args command line, including data loading, preprocessing, feature engineering, model training, and evaluation
 import argparse
+import sys
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from src.core.preprocessor import Preprocessor
 from src.forest.random_forest_regressor import RandomForestRegressor
 from src.utils.config import config
@@ -134,7 +142,7 @@ def cross_validate_raw_dataset(df, dataset_type, n_splits=5):
 
     return cv_metrics
 
-def main(dataset_type):
+def main(dataset_type, skip_cv=False):
     df = pd.read_csv(config['paths']['raw_data'][dataset_type])
     preprocessor = Preprocessor(dataset_type)
     target_column = config['target'][dataset_type]
@@ -142,7 +150,7 @@ def main(dataset_type):
     train_ratio = 1 - preprocessing_config["test_size"]
     df = preprocessor.clean_raw_dataset(df, dataset_type)
     cv_config = config.get("cross_validation", {})
-    if cv_config.get("enabled", False):
+    if cv_config.get("enabled", False) and not skip_cv:
         cross_validate_raw_dataset(
             df,
             dataset_type,
@@ -196,5 +204,10 @@ def main(dataset_type):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train model for prabayar or pascabayar dataset")
     parser.add_argument("--dataset", choices=["prabayar", "pascabayar"], required=True)
+    parser.add_argument(
+        "--skip-cv",
+        action="store_true",
+        help="Skip cross-validation and run only train/test evaluation.",
+    )
     args = parser.parse_args()    
-    main(args.dataset)
+    main(args.dataset, skip_cv=args.skip_cv)
