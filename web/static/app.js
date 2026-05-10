@@ -281,7 +281,11 @@ function collectPayload() {
       nominal_token: formData.get("nominal_token"),
       frekuensi_token: formData.get("frekuensi_token"),
       bulan_tagihan: formData.get("bulan_tagihan"),
-      tagihan_stabil: formData.get("tagihan_stabil")
+      tagihan_stabil: formData.get("tagihan_stabil"),
+      sumber_angka_tagihan: formData.get("sumber_angka_tagihan"),
+      pemakaian_bulan_terakhir: formData.get("pemakaian_bulan_terakhir"),
+      pemakaian_2_bulan_lalu: formData.get("pemakaian_2_bulan_lalu"),
+      pemakaian_3_bulan_lalu: formData.get("pemakaian_3_bulan_lalu")
     },
     devices,
     other_devices: {

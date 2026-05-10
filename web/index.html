@@ -84,9 +84,31 @@
             <label class="field">
               <span>Tagihan relatif stabil</span>
               <select name="tagihan_stabil">
-                <option>Ya</option>
-                <option>Tidak</option>
+                <option>Ya, relatif stabil</option>
+                <option>Tidak, sering berubah</option>
+                <option>Tidak tahu</option>
               </select>
+            </label>
+            <label class="field">
+              <span>Sumber angka tagihan</span>
+              <select name="sumber_angka_tagihan">
+                <option>Melihat rekening listrik / PLN Mobile</option>
+                <option>Melihat bukti pembayaran / struk</option>
+                <option>Mengingat dari pembayaran terakhir</option>
+                <option>Perkiraan kasar</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Pemakaian bulan terakhir (kWh)</span>
+              <input name="pemakaian_bulan_terakhir" type="number" min="0" step="0.01" value="300" />
+            </label>
+            <label class="field">
+              <span>Pemakaian 2 bulan lalu (kWh)</span>
+              <input name="pemakaian_2_bulan_lalu" type="number" min="0" step="0.01" value="300" />
+            </label>
+            <label class="field">
+              <span>Pemakaian 3 bulan lalu (kWh)</span>
+              <input name="pemakaian_3_bulan_lalu" type="number" min="0" step="0.01" value="300" />
             </label>
           </div>
 

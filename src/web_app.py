@@ -262,12 +262,50 @@ class PredictionService:
                 }
             )
         else:
+            pemakaian_inputs = [
+                general.get("pemakaian_bulan_terakhir"),
+                general.get("pemakaian_2_bulan_lalu"),
+                general.get("pemakaian_3_bulan_lalu"),
+            ]
+            pemakaian_values = [
+                None if value in (None, "") else to_number(value, 0)
+                for value in pemakaian_inputs
+            ]
+            filled_pemakaian = [
+                value for value in pemakaian_values
+                if value is not None and value > 0
+            ]
+            stability = general.get("tagihan_stabil", "Ya, relatif stabil")
+            if stability == "Ya":
+                stability = "Ya, relatif stabil"
+            elif stability == "Tidak":
+                stability = "Tidak, sering berubah"
+
             record.update(
                 {
                     "Bulan_Tagihan": general.get("bulan_tagihan", "Januari"),
-                    "Tagihan_Relatif_Stabil": general.get("tagihan_stabil", "Ya"),
+                    "Sumber_Angka_Tagihan": general.get(
+                        "sumber_angka_tagihan",
+                        "Melihat rekening listrik / PLN Mobile",
+                    ),
+                    "Tagihan_Relatif_Stabil": stability,
                 }
             )
+
+            if any(value is not None for value in pemakaian_values):
+                record.update(
+                    {
+                        "Pemakaian_Bulan_Terakhir_kWh": pemakaian_values[0] or 0,
+                        "Pemakaian_2_Bulan_Lalu_kWh": pemakaian_values[1] or 0,
+                        "Pemakaian_3_Bulan_Lalu_kWh": pemakaian_values[2] or 0,
+                        "Pemakaian_Rata_Rata_3Bulan_kWh": (
+                            sum(filled_pemakaian) / len(filled_pemakaian)
+                            if filled_pemakaian
+                            else 0
+                        ),
+                        "Jumlah_Bulan_kWh_Terisi": len(filled_pemakaian),
+                    }
+                )
 
         for device, meta in MAIN_DEVICES.items():
             data = payload.get("devices", {}).get(device, {})
