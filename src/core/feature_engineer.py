@@ -72,7 +72,7 @@ class FeatureEngineer:
     def calculate_other_devices(self):
         for i in range (1, 4):
             jumlah = f"Alat_Lain_{i}_Jumlah"
-            watt = f"Alat_Lain_{i}_EstimasiWattPerUnit"
+            watt = f"Alat_Lain_{i}_EstimasiWatt"
             jam = f"Alat_Lain_{i}_EstimasiJamPerHari"
 
             if all(col in self.df.columns for col in [jumlah, watt, jam]):
@@ -279,8 +279,15 @@ class FeatureEngineer:
     # dropout redundant features that are not needed for modeling
     def drop_wh_columns(self):
         existing = [col for col in config['cols_to_drop'] if col in self.df.columns]
+
+        if config.get("feature_selection", {}).get(self.dataset_type, False):
+            protected_columns = set(config["features"].get(self.dataset_type, []))
+            protected_columns.add(config["target"][self.dataset_type])
+            existing = [col for col in existing if col not in protected_columns]
+
         self.df.drop(columns=existing, inplace=True)
-        print(f"Dropped columns: {existing}")
+        if config.get("diagnostics", {}).get("enabled", False):
+            print(f"Dropped columns: {existing}")
         return self
 
     # pipeline for feature engineering
@@ -299,7 +306,8 @@ class FeatureEngineer:
             self.postpaid_features()
 
         self.drop_wh_columns()
-        diagnose_correlation(self.df)
+        if config.get("diagnostics", {}).get("enabled", False):
+            diagnose_correlation(self.df, target=config["target"].get(self.dataset_type))
 
 
         return self.df
