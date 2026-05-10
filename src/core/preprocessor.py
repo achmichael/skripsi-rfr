@@ -28,6 +28,8 @@ class Preprocessor:
     def __init__(self, dataset_type):
         self.dataset_type = dataset_type
         self.target_column = config["target"][dataset_type]
+        self.selected_features = list(config["features"].get(dataset_type, []))
+        self.use_feature_selection = config.get("feature_selection", {}).get(dataset_type, False)
         self.numeric_columns = set(config["numeric_features"].get(dataset_type, []))
         self.numeric_columns.add(self.target_column)
         self.categorical_columns = config["categorical_features"].get(dataset_type, [])
@@ -54,6 +56,7 @@ class Preprocessor:
         
         # 4. Do Feature Engineering using the clean dataframe (now completely free of NaN)
         prepared = FeatureEngineer(prepared, dataset_type=self.dataset_type).engineer_features()
+        prepared = self._select_model_columns(prepared, strict=True)
         
         # 5. Fit outlier bounds (if applicable)
         self._fit_outlier_bounds(prepared)
@@ -80,6 +83,7 @@ class Preprocessor:
         prepared = self._normalize_device_consistency(prepared)
         
         prepared = FeatureEngineer(prepared, dataset_type=self.dataset_type).engineer_features()
+        prepared = self._select_model_columns(prepared, strict=False)
         
         prepared = self._apply_outlier_bounds(prepared)
         prepared = self._normalize_device_consistency(prepared)
@@ -93,6 +97,11 @@ class Preprocessor:
         cleaned = df.copy()
         target_column = config["target"][dataset_type]
         cleaning_config = config.get("target_cleaning", {}).get(dataset_type, {})
+
+        if target_column not in cleaned.columns:
+            raise ValueError(
+                f"Target column '{target_column}' is missing from {dataset_type} dataset."
+            )
 
         if target_column in cleaned.columns:
             cleaned[target_column] = (
@@ -146,6 +155,31 @@ class Preprocessor:
             converted[col] = pd.to_numeric(converted[col], errors="coerce")
 
         return converted
+
+    def _select_model_columns(self, df, strict):
+        if not self.use_feature_selection:
+            return df
+
+        selected_columns = [col for col in self.selected_features if col != self.target_column]
+        required_columns = selected_columns + [self.target_column]
+        missing_columns = [col for col in required_columns if col not in df.columns]
+
+        if strict and missing_columns:
+            raise ValueError(
+                f"Configured {self.dataset_type} columns are missing after preprocessing: "
+                f"{missing_columns}"
+            )
+
+        selected = df.copy()
+        for col in missing_columns:
+            if col == self.target_column:
+                selected[col] = self.numeric_fill_values.get(col, 0)
+            elif col in self.numeric_columns:
+                selected[col] = self.numeric_fill_values.get(col, 0)
+            else:
+                selected[col] = self.categorical_fill_values.get(col, "Unknown")
+
+        return selected[required_columns]
 
     def _fit_missing_values(self, df):
         for col in df.columns:
