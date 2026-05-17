@@ -9,6 +9,11 @@ class FileWriter:
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
 
+    def _dataset_dir(self, dataset_type, category):
+        path = os.path.join(self.output_dir, dataset_type, category)
+        os.makedirs(path, exist_ok=True)
+        return path
+
     def write_results(self, model_name, results):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"{model_name}_{timestamp}.json"
@@ -32,7 +37,7 @@ class FileWriter:
     def save_metric_bar(self, metrics, dataset_type):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"metrics_{dataset_type}_{timestamp}.png"
-        path = os.path.join(self.output_dir, filename)
+        path = os.path.join(self._dataset_dir(dataset_type, "metrics"), filename)
 
         names = list(metrics.keys())
         values = [metrics[name] for name in names]
@@ -90,7 +95,7 @@ class FileWriter:
     def save_model(self, model, model_name):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"{model_name}_{timestamp}.pkl"
-        path = os.path.join(self.output_dir, filename)
+        path = os.path.join(self._dataset_dir(model_name, "model"), filename)
 
         with open(path, "wb") as f:
             import pickle
@@ -101,7 +106,7 @@ class FileWriter:
     def save_evaluation_results(self, metrics, dataset_type):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"evaluation_{dataset_type}_{timestamp}.json"
-        path = os.path.join(self.output_dir, filename)
+        path = os.path.join(self._dataset_dir(dataset_type, "evaluations"), filename)
 
         results = {
             "dataset": dataset_type,
@@ -117,7 +122,7 @@ class FileWriter:
     def save_feature_log(self, dataset_type, feature_names, feature_importances=None, top_n=30):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"features_{dataset_type}_{timestamp}.json"
-        path = os.path.join(self.output_dir, filename)
+        path = os.path.join(self._dataset_dir(dataset_type, "features"), filename)
 
         feature_importance_rows = []
         if feature_importances is not None and len(feature_importances) == len(feature_names):
